@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Daily Budget — Calorie Tracker</title>
+  <!-- Favicon Moneta Calorie -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23f59e0b' stroke='%23fef08a' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='37' fill='%23d97706' stroke='%23fde68a' stroke-width='1.5' stroke-dasharray='4 3'/%3E%3Ctext x='50' y='55' font-family='Arial,sans-serif' font-size='15' font-weight='900' fill='%23fffbeb' text-anchor='middle'%3ECALORIE%3C/text%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #070b14; color: #f8fafc; }
+    .glass { background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+    .game-card { background: linear-gradient(145deg, rgba(30,41,59,0.75), rgba(15,23,42,0.95)); border: 1px solid rgba(255,255,255,0.08); }
+    .bar-anim { transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease; }
+    .coin-shadow { filter: drop-shadow(0 4px 10px rgba(245, 158, 11, 0.25)); }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- TOP NAVBAR -->
+  <header class="border-b border-slate-800/80 bg-slate-950/90 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <!-- LOGO MONETA CON SCRITTO CALORIE -->
+        <div class="w-12 h-12 flex items-center justify-center coin-shadow select-none shrink-0">
+          <svg viewBox="0 0 100 100" class="w-12 h-12">
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fde047" />
+                <stop offset="50%" stop-color="#f59e0b" />
+                <stop offset="100%" stop-color="#b45309" />
+              </linearGradient>
+              <linearGradient id="innerGold" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#92400e" />
+                <stop offset="100%" stop-color="#d97706" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="46" fill="url(#goldGrad)" stroke="#fef08a" stroke-width="3" />
+            <circle cx="50" cy="50" r="38" fill="url(#innerGold)" stroke="#fde68a" stroke-width="1.5" stroke-dasharray="4 3" />
+            <text x="50" y="34" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800" fill="#fef08a" text-anchor="middle" letter-spacing="1.5">★ DAILY ★</text>
+            <text x="50" y="54" font-family="Plus Jakarta Sans, sans-serif" font-size="14.5" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">CALORIE</text>
+            <text x="50" y="71" font-family="Plus Jakarta Sans, sans-serif" font-size="8.5" font-weight="800" fill="#fde68a" text-anchor="middle" letter-spacing="1">BUDGET</text>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-white text-lg tracking-tight flex items-center gap-2">
+            <span>Your Daily Budget</span>
+          </h1>
+          <p class="text-xs text-slate-400" id="playerSubtitle">—</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="aiConfigBtn" onclick="openAiModal()" class="hidden text-xs bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 px-3 py-1.5 rounded-xl border border-indigo-500/40 font-bold transition">
+          🤖 <span id="t_aiBtn">AI</span>
+        </button>
+        <button id="switchUserBtn" onclick="openProfileModal()" class="hidden text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl border border-slate-700 font-semibold transition">
+          👤 <span id="t_editProfile">Profilo</span>
+        </button>
+
+        <!-- Selettore Lingua (IT / EN / UA) -->
+        <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <button onclick="setLang('it')" id="lang_it" class="px-2 py-1 rounded-lg text-xs font-bold transition">🇮🇹 IT</button>
+          <button onclick="setLang('en')" id="lang_en" class="px-2 py-1 rounded-lg text-xs font-bold transition">🇬🇧 EN</button>
+          <button onclick="setLang('ua')" id="lang_ua" class="px-2 py-1 rounded-lg text-xs font-bold transition">🇺🇦 UA</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MODAL 1: PROFILO & IMPOSTAZIONE BUDGET -->
+  <div id="profileModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div class="glass rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-700 my-8">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+          🎯 <span id="t_modalTitle">Imposta il tuo Profilo</span>
+        </h2>
+        <button id="closeModalBtn" onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-sm hidden">✕</button>
+      </div>
+
+      <!-- Spiegazione chiara del funzionamento -->
+      <div class="bg-indigo-950/50 border border-indigo-500/30 rounded-2xl p-3.5 mb-5 text-xs text-indigo-200 space-y-1">
+        <p class="font-bold text-indigo-300 flex items-center gap-1.5">💡 <span id="t_howTitle">Come funziona:</span></p>
+        <p id="t_howDesc" class="leading-relaxed"></p>
+      </div>
+
+      <form onsubmit="saveProfile(event)" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" id="t_lblName">Nome</label>
+            <input type="text" id="pName" required placeholder="Alex" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" id="t_lblGender">Sesso</label>
+            <select id="pGender" onchange="updateLivePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="m" id="t_optMale">Uomo</option>
+              <option value="f" id="t_optFemale">Donna</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" id="t_lblAge">Età (anni)</label>
+            <input type="number" id="pAge" required min="14" max="100" value="25" oninput="updateLivePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" id="t_lblHeight">Altezza (cm)</label>
+            <input type="number" id="pHeight" required min="120" max="240" value="178" oninput="updateLivePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" id="t_lblWeight">Peso (kg)</label>
+            <input type="number" id="pWeight" required step="0.1" min="35" max="250" value="85" oninput="updateLivePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold focus:border-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" id="t_lblGoal">Obiettivo di Deficit Giornaliero:</label>
+          <select id="pDeficit" onchange="updateLivePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-semibold focus:border-emerald-500 focus:outline-none">
+            <option value="350" id="t_goal1"></option>
+            <option value="500" id="t_goal2"></option>
+            <option value="650" selected id="t_goal3"></option>
+            <option value="850" id="t_goal4"></option>
+          </select>
+        </div>
+
+        <!-- ANTEPRIMA CALCOLO LIVE -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">
+          <div>
+            <span class="text-[11px] text-slate-400 block" id="t_prevBmr">Metabolismo (BMR)</span>
+            <strong class="text-sm sm:text-base font-extrabold text-slate-200" id="prevBmrVal">0 kcal</strong>
+          </div>
+          <div class="border-x border-slate-800">
+            <span class="text-[11px] text-slate-400 block" id="t_prevTdee">Fabbisogno (TDEE)</span>
+            <strong class="text-sm sm:text-base font-extrabold text-indigo-400" id="prevTdeeVal">0 kcal</strong>
+          </div>
+          <div>
+            <span class="text-[11px] text-slate-400 block" id="t_prevBudget">Budget Giornaliero</span>
+            <strong class="text-base sm:text-lg font-extrabold text-amber-400" id="prevBudgetVal">0 kcal</strong>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20" id="t_btnStart">
+          Salva e Inizia
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CONNETTORE AI -->
+  <div id="aiModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-700">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-extrabold text-white flex items-center gap-2">
+          🤖 <span id="t_aiModalTitle">Connettore AI</span>
+        </h2>
+        <button onclick="closeAiModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4 leading-relaxed" id="t_aiModalDesc"></p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5" id="t_aiProviderLbl">Scegli il tuo assistente AI:</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="selectAiProvider('gemini')" id="prov_gemini" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition">✨ Gemini</button>
+            <button type="button" onclick="selectAiProvider('chatgpt')" id="prov_chatgpt" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition">🟢 ChatGPT</button>
+            <button type="button" onclick="selectAiProvider('claude')" id="prov_claude" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition">🟠 Claude</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+          <label class="block text-xs font-semibold text-slate-300" id="t_apiKeyLbl">API Key (Opzionale):</label>
+          <input type="password" id="aiApiKeyInput" placeholder="AIzaSy... / sk-..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none">
+          <p class="text-[11px] text-slate-500 leading-relaxed" id="t_apiKeyHint"></p>
+        </div>
+
+        <button onclick="saveAiConfig()" class="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-extrabold py-2.5 rounded-xl text-sm transition" id="t_btnSaveAi">
+          Salva Impostazioni
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN INTERFACE -->
+  <main id="appMain" class="max-w-5xl mx-auto px-4 mt-6 space-y-6 hidden">
+
+    <!-- SELETTORE GIORNI + CONTATORE GIORNI IN TARGET -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto" id="dayTabs"></div>
+      <div class="flex items-center gap-2 text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-3.5 py-2 rounded-xl">
+        🔥 <span id="t_streakLabel">Giorni in Target:</span> <span id="winStreakCount" class="text-sm">0/7</span>
+      </div>
+    </div>
+
+    <!-- HUD DEL BUDGET GIORNALIERO -->
+    <section class="game-card rounded-3xl p-6 shadow-2xl">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+        <div>
+          <span class="text-xs uppercase tracking-widest font-bold text-indigo-400" id="currentDayLabel">Oggi</span>
+          <div class="flex items-center gap-3 mt-1">
+            <h2 class="text-4xl sm:text-5xl font-extrabold tracking-tight" id="pctText">0%</h2>
+            <span id="statusBadge" class="px-3 py-1 rounded-full text-xs font-extrabold border"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 sm:gap-3 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-center">
+          <div class="px-2">
+            <span class="text-[11px] text-slate-400 block" id="t_hudBudget">Budget Oggi</span>
+            <strong class="text-base sm:text-lg font-extrabold text-amber-400" id="targetKcal">0</strong>
+            <span class="text-[10px] text-slate-500 block">kcal (100%)</span>
+          </div>
+          <div class="px-2 border-x border-slate-800">
+            <span class="text-[11px] text-slate-400 block" id="t_hudSpent">Assunte</span>
+            <strong class="text-base sm:text-lg font-extrabold text-white" id="eatenKcal">0</strong>
+            <span class="text-[10px] text-slate-500 block">kcal</span>
+          </div>
+          <div class="px-2">
+            <span class="text-[11px] text-slate-400 block" id="t_hudLeft">Disponibili</span>
+            <strong class="text-base sm:text-lg font-extrabold text-emerald-400" id="leftKcal">0</strong>
+            <span class="text-[10px] text-slate-500 block">kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra Verde <= 100%, Rossa > 100% -->
+      <div class="w-full h-8 bg-slate-950 rounded-2xl overflow-hidden p-1.5 border border-slate-800 relative shadow-inner">
+        <div id="calorieBar" class="h-full rounded-xl bar-anim bg-emerald-500" style="width: 0%"></div>
+      </div>
+      <div class="flex justify-between items-center text-xs text-slate-400 mt-2.5">
+        <span>0%</span>
+        <span id="gameMessage" class="font-bold text-emerald-400 text-center"></span>
+        <span id="t_limit100">100% (Limite)</span>
+      </div>
+    </section>
+
+    <!-- CONTROLLI: PASSI + 4 CATEGORIE PASTI -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Card Passi & Movimento (4 col) -->
+      <div class="game-card rounded-3xl p-5 lg:col-span-4 flex flex-col justify-between space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-extrabold text-white flex items-center gap-2">
+              👟 <span id="t_stepsTitle">Bonus Camminata</span>
+            </h3>
+            <span class="text-xs font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg" id="stepBurnBadge">+0 kcal</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4 leading-relaxed" id="t_stepsDesc"></p>
+          
+          <label class="block text-xs text-slate-300 mb-1.5 font-semibold" id="t_stepsInputLbl">Passi di oggi:</label>
+          <input type="number" id="stepsInput" step="500" min="0" placeholder="0"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold focus:outline-none focus:border-amber-400"
+            oninput="updateSteps(this.value)">
+
+          <div class="grid grid-cols-3 gap-2 mt-3">
+            <button onclick="addQuickSteps(1000)" class="bg-slate-800/90 hover:bg-slate-700 text-xs py-2 rounded-xl text-amber-300 font-bold border border-slate-700 transition">+1.000</button>
+            <button onclick="addQuickSteps(2500)" class="bg-slate-800/90 hover:bg-slate-700 text-xs py-2 rounded-xl text-amber-300 font-bold border border-slate-700 transition">+2.500</button>
+            <button onclick="addQuickSteps(5000)" class="bg-slate-800/90 hover:bg-slate-700 text-xs py-2 rounded-xl text-amber-300 font-bold border border-slate-700 transition">+5.000</button>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800/80 text-xs text-slate-400 space-y-1.5">
+          <div class="flex justify-between">
+            <span id="t_tdeeLabel">Fabbisogno Totale (TDEE):</span>
+            <strong class="text-slate-200" id="tdeeKcal">0 kcal</strong>
+          </div>
+          <div class="flex justify-between">
+            <span id="t_dailySavedLbl">Bilancio sul Fabbisogno:</span>
+            <strong id="dailyDeficitText" class="font-extrabold text-emerald-400">0 kcal</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 Categorie Pasti + Stima AI (8 col) -->
+      <div class="game-card rounded-3xl p-5 lg:col-span-8 flex flex-col justify-between">
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-extrabold text-white flex items-center gap-2">
+              🍽️ <span id="t_mealsTitle">Registra i Pasti</span>
+            </h3>
+            <button onclick="openAiModal()" class="text-[11px] font-bold text-indigo-300 hover:text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-1 rounded-lg">
+              ⚙️ <span id="activeAiBadge">AI: GEMINI</span>
+            </button>
+          </div>
+
+          <!-- 4 TABS CATEGORIE: Colazione, Pranzo, Cena, Spuntini -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4" id="mealCategoryTabs"></div>
+
+          <!-- Form Inserimento Pasto -->
+          <form onsubmit="addMeal(event)" class="space-y-2.5 mb-4 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <input type="text" id="mealName" required
+                class="sm:col-span-9 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <button type="button" onclick="estimateWithAI()" id="aiEstimateBtn"
+                class="sm:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold rounded-xl py-2.5 px-3 text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/20">
+                ✨ <span id="t_btnAiCalc">Stima con AI</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="number" id="mealKcal" required min="1"
+                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-amber-400 font-extrabold focus:outline-none focus:border-emerald-500">
+              <button type="submit" id="t_btnAddMeal"
+                class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl px-5 py-2 text-sm transition">
+                + Aggiungi
+              </button>
+            </div>
+            <p id="aiHelperStatus" class="text-[11px] text-indigo-300 hidden pt-1"></p>
+          </form>
+
+          <!-- Lista Alimenti della Categoria -->
+          <div id="mealList" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIEPILOGO SETTIMANALE -->
+    <section class="game-card rounded-3xl p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+        <div>
+          <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
+            📊 <span id="t_wkTitle">Riepilogo Settimanale</span>
+          </h3>
+          <p class="text-xs text-slate-400" id="t_wkSub">Andamento complessivo dei giorni registrati</p>
+        </div>
+        <button onclick="resetWeek()" id="t_btnResetWk" class="text-xs text-rose-400 hover:text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-xl self-start sm:self-auto font-semibold transition">
+          Nuova Settimana
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4">
+          <span class="text-xs text-slate-400" id="t_kpi1">Calorie Assunte</span>
+          <p class="text-2xl font-extrabold text-white mt-1" id="wkEaten">0 kcal</p>
+          <span class="text-[11px] text-slate-500" id="wkDaysCount">0 / 7</span>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4">
+          <span class="text-xs text-slate-400" id="t_kpi2">Fabbisogno (TDEE)</span>
+          <p class="text-2xl font-extrabold text-slate-200 mt-1" id="wkBurned">0 kcal</p>
+          <span class="text-[11px] text-slate-500" id="wkStepsTotal">0</span>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4">
+          <span class="text-xs text-slate-400" id="t_kpi3">Deficit Accumulato</span>
+          <p class="text-2xl font-extrabold text-emerald-400 mt-1" id="wkDeficit">0 kcal</p>
+          <span class="text-[11px] text-slate-500" id="t_kpi3Sub">Risparmio calorico netto</span>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4">
+          <span class="text-xs text-slate-400" id="t_kpi4">Perdita Grasso Stimata</span>
+          <p class="text-2xl font-extrabold text-amber-400 mt-1" id="wkFatLost">0 g</p>
+          <span class="text-[11px] text-slate-500">7.700 kcal ≈ 1 kg</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-slate-800 text-xs uppercase text-slate-400">
+              <th class="py-3 px-3" id="t_thDay">Giorno</th>
+              <th class="py-3 px-3" id="t_thSteps">Passi</th>
+              <th class="py-3 px-3" id="t_thBudget">Budget 100%</th>
+              <th class="py-3 px-3" id="t_thSpent">Assunte</th>
+              <th class="py-3 px-3 w-44" id="t_thStatus">Barra Budget</th>
+              <th class="py-3 px-3 text-right" id="t_thResult">Bilancio</th>
+            </tr>
+          </thead>
+          <tbody id="weeklyTableBody" class="divide-y divide-slate-800/50"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const CATS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+    const CAT_ICONS = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snacks: '🍿' };
+
+    const I18N = {
+      it: {
+        aiBtn: "Connettore AI", editProfile: "Profilo",
+        modalTitle: "Imposta il tuo Profilo e Budget",
+        howTitle: "Come funziona il gioco:",
+        howDesc: "In base a peso, altezza ed età calcoliamo quante calorie bruci ogni giorno (Fabbisogno TDEE). Sottraendo il deficit che scegli qui sotto, ottieni il tuo Budget Giornaliero (100%). I pasti consumano il budget, mentre camminare ti regala calorie bonus. Resta entro il 100% (Barra Verde) per vincere la giornata e perdere peso!",
+        lblName: "Il tuo Nome", lblGender: "Sesso", optMale: "Uomo", optFemale: "Donna",
+        lblAge: "Età (anni)", lblHeight: "Altezza (cm)", lblWeight: "Peso (kg)",
+        lblGoal: "Scegli il Deficit Calorico giornaliero:",
+        goal1: "🌱 Leggero (-350 kcal/giorno • ~0,35 kg a settimana)",
+        goal2: "⚖️ Moderato (-500 kcal/giorno • ~0,5 kg a settimana)",
+        goal3: "🔥 Consigliato (-650 kcal/giorno • ~0,65 kg a settimana)",
+        goal4: "⚡ Intenso (-850 kcal/giorno • ~0,85 kg a settimana)",
+        prevBmr: "Metabolismo (BMR)", prevTdee: "Fabbisogno (TDEE)", prevBudget: "Tuo Budget (100%)",
+        btnStart: "🚀 Salva Profilo e Inizia",
+        aiModalTitle: "Connettore AI (Gemini, ChatGPT, Claude)",
+        aiModalDesc: "Scegli quale intelligenza artificiale usare per stimare le calorie partendo dalla descrizione del pasto.",
+        aiProviderLbl: "Seleziona l'assistente AI:",
+        apiKeyLbl: "API Key personale (Opzionale - per calcolo diretto istantaneo):",
+        apiKeyHint: "Se lasci vuoto, cliccando 'Stima con AI' otterrai subito una stima rapida, il prompt verrà copiato negli appunti e potrai aprire con un clic il tuo account web (Gemini, ChatGPT o Claude).",
+        btnSaveAi: "Salva Impostazioni AI",
+        streakLabel: "Giorni Vinti (Verde):",
+        hudBudget: "Budget Oggi", hudSpent: "Assunte", hudLeft: "Rimaste", limit100: "100% (Limite Budget)",
+        statusWin: "ENTRO IL BUDGET", statusOver: "BUDGET SUPERATO",
+        msgWin: "Ottimo! Hai ancora {n} kcal disponibili nel budget di oggi.",
+        msgOver: "Attenzione: hai superato il budget giornaliero di {n} kcal.",
+        stepsTitle: "Bonus Camminata",
+        stepsDesc: "Più cammini, più calorie bruci: ogni passo aumenta automaticamente il tuo Budget di oggi.",
+        stepsInputLbl: "Passi fatti oggi:", tdeeLabel: "Fabbisogno Totale (TDEE):", dailySavedLbl: "Bilancio sul Fabbisogno:",
+        mealsTitle: "Registra i Pasti del Giorno",
+        mealPlaceholder: "Descrivi il pasto (es. 150g pasta al pomodoro e 1 mela)...",
+        kcalPlaceholder: "Kcal",
+        btnAiCalc: "Stima con AI", btnAddMeal: "+ Aggiungi",
+        emptyMeals: "Nessun alimento registrato in questo pasto.",
+        cats: { breakfast: "Colazione", lunch: "Pranzo", dinner: "Cena", snacks: "Spuntini" },
+        wkTitle: "Riepilogo Settimanale", wkSub: "Statistiche cumulative dei giorni compilati nella settimana",
+        btnResetWk: "Nuova Settimana", kpi1: "Calorie Assunte", kpi2: "Fabbisogno (TDEE)",
+        kpi3: "Deficit Accumulato", kpi3Sub: "Risparmio calorico netto", kpi4: "Grasso Bruciato Stimato",
+        thDay: "Giorno", thSteps: "Passi", thBudget: "Budget 100%", thSpent: "Assunte", thStatus: "Barra Budget", thResult: "Deficit Netto",
+        notPlayed: "Non compilato",
+        daysShort: ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"],
+        daysFull: ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"],
+        confirmReset: "Vuoi azzerare i dati della settimana e iniziarne una nuova?",
+        aiWorking: "⏳ Calcolo AI in corso...",
+        aiDirectOk: "✅ Calcolato da {p}: {n} kcal",
+        aiFallbackMsg: "✨ Stima rapida: <strong>{n} kcal</strong> (prompt copiato). <a href='{u}' target='_blank' rel='noopener' class='underline font-bold text-amber-400 ml-1'>Verifica su {p} ↗</a>",
+        aiPromptPrefix: "Calcola le calorie totali per questo pasto e rispondi SOLO con il numero intero di kcal: ",
+        stepsUnit: "passi", daysUnit: "giorni attivi", deficitWord: "Deficit", surplusWord: "Surplus"
+      },
+      en: {
+        aiBtn: "AI Connector", editProfile: "Profile",
+        modalTitle: "Player & Budget Setup",
+        howTitle: "How the game works:",
+        howDesc: "Based on your weight, height, and age, we calculate your daily energy burn (TDEE). Subtracting your chosen deficit gives you your Daily Calorie Budget (100%). Meals use your budget, while walking earns bonus calories. Stay at or under 100% (Green Bar) to win the day and lose weight!",
+        lblName: "Your Name", lblGender: "Gender", optMale: "Male", optFemale: "Female",
+        lblAge: "Age (years)", lblHeight: "Height (cm)", lblWeight: "Weight (kg)",
+        lblGoal: "Choose your daily Calorie Deficit:",
+        goal1: "🌱 Light (-350 kcal/day • ~0.35 kg per week)",
+        goal2: "⚖️ Moderate (-500 kcal/day • ~0.5 kg per week)",
+        goal3: "🔥 Recommended (-650 kcal/day • ~0.65 kg per week)",
+        goal4: "⚡ Intense (-850 kcal/day • ~0.85 kg per week)",
+        prevBmr: "Basal (BMR)", prevTdee: "Total Burn (TDEE)", prevBudget: "Your Budget (100%)",
+        btnStart: "🚀 Save Profile & Start",
+        aiModalTitle: "AI Connector (Gemini, ChatGPT, Claude)",
+        aiModalDesc: "Choose your preferred AI assistant to estimate calories straight from your meal descriptions.",
+        aiProviderLbl: "Select AI Assistant:",
+        apiKeyLbl: "Personal API Key (Optional - for instant direct calculation):",
+        apiKeyHint: "If left blank, clicking 'Estimate with AI' enters a smart estimate, copies the prompt, and gives you a direct link to open your logged-in Gemini, ChatGPT, or Claude account.",
+        btnSaveAi: "Save AI Settings",
+        streakLabel: "Winning Days (Green):",
+        hudBudget: "Today's Budget", hudSpent: "Consumed", hudLeft: "Remaining", limit100: "100% (Budget Limit)",
+        statusWin: "WITHIN BUDGET", statusOver: "OVER BUDGET",
+        msgWin: "Great job! You still have {n} kcal available today.",
+        msgOver: "Warning: you exceeded today's budget by {n} kcal.",
+        stepsTitle: "Walking Bonus",
+        stepsDesc: "The more you walk, the more you burn: every step automatically increases today's Budget.",
+        stepsInputLbl: "Steps taken today:", tdeeLabel: "Total Burn (TDEE):", dailySavedLbl: "Daily Net Balance:",
+        mealsTitle: "Log Today's Meals",
+        mealPlaceholder: "Describe your meal (e.g. 150g tomato pasta and 1 apple)...",
+        kcalPlaceholder: "Kcal",
+        btnAiCalc: "Estimate with AI", btnAddMeal: "+ Add",
+        emptyMeals: "No food logged for this meal yet.",
+        cats: { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snacks: "Snacks" },
+        wkTitle: "Weekly Summary", wkSub: "Cumulative stats for all logged days this week",
+        btnResetWk: "New Week", kpi1: "Calories Consumed", kpi2: "Total Burn (TDEE)",
+        kpi3: "Cumulative Deficit", kpi3Sub: "Net energy saved", kpi4: "Estimated Fat Loss",
+        thDay: "Day", thSteps: "Steps", thBudget: "Budget 100%", thSpent: "Consumed", thStatus: "Budget Bar", thResult: "Net Balance",
+        notPlayed: "No entries",
+        daysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        daysFull: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        confirmReset: "Do you want to clear this week's data and start a new week?",
+        aiWorking: "⏳ AI calculating...",
+        aiDirectOk: "✅ Calculated by {p}: {n} kcal",
+        aiFallbackMsg: "✨ Quick estimate: <strong>{n} kcal</strong> (prompt copied). <a href='{u}' target='_blank' rel='noopener' class='underline font-bold text-amber-400 ml-1'>Check on {p} ↗</a>",
+        aiPromptPrefix: "Calculate the total calories for this meal and reply ONLY with the integer number of kcal: ",
+        stepsUnit: "steps", daysUnit: "active days", deficitWord: "Deficit", surplusWord: "Surplus"
+      },
+      ua: {
+        aiBtn: "AI Конектор", editProfile: "Профіль",
+        modalTitle: "Налаштування Профілю та Бюджету",
+        howTitle: "Як працює гра:",
+        howDesc: "На основі вашої ваги, зросту та віку ми розраховуємо ваші щоденні витрати енергії (TDEE). Віднімаючи обраний дефіцит, ви отримуєте свій Денний Бюджет калорій (100%). Їжа використовує бюджет, а ходьба додає бонусні калорії. Залишайтеся в межах 100% (Зелена шкала), щоб виграти день!",
+        lblName: "Ваше Ім'я", lblGender: "Стать", optMale: "Чоловік", optFemale: "Жінка",
+        lblAge: "Вік (років)", lblHeight: "Зріст (см)", lblWeight: "Вага (кг)",
+        lblGoal: "Оберіть бажаний денний дефіцит калорій:",
+        goal1: "🌱 Легкий (-350 ккал/день • ~0,35 кг на тиждень)",
+        goal2: "⚖️ Помірний (-500 ккал/день • ~0,5 кг на тиждень)",
+        goal3: "🔥 Рекомендований (-650 ккал/день • ~0,65 кг на тиждень)",
+        goal4: "⚡ Інтенсивний (-850 ккал/день • ~0,85 кг на тиждень)",
+        prevBmr: "Метаболізм (BMR)", prevTdee: "Витрати (TDEE)", prevBudget: "Ваш Бюджет (100%)",
+        btnStart: "🚀 Зберегти та Почати",
+        aiModalTitle: "AI Конектор (Gemini, ChatGPT, Claude)",
+        aiModalDesc: "Оберіть AI-асистента для розрахунку калорій за описом ваших страв.",
+        aiProviderLbl: "Оберіть AI-асистента:",
+        apiKeyLbl: "Особистий API Key (Необов'язково - для миттєвого розрахунку):",
+        apiKeyHint: "Якщо поле порожнє, кнопка 'Оцінити з AI' підставить швидку оцінку, скопіює запит та дасть посилання на ваш акаунт Gemini, ChatGPT або Claude.",
+        btnSaveAi: "Зберегти налаштування AI",
+        streakLabel: "Дні в цілі (Зелені):",
+        hudBudget: "Бюджет Сьогодні", hudSpent: "Спожито", hudLeft: "Залишок", limit100: "100% (Ліміт)",
+        statusWin: "В МЕЖАХ БЮДЖЕТУ", statusOver: "БЮДЖЕТ ПЕРЕВИЩЕНО",
+        msgWin: "Чудово! У вас ще є {n} ккал в бюджеті на сьогодні.",
+        msgOver: "Увага: ви перевищили денний бюджет на {n} ккал.",
+        stepsTitle: "Бонус за Ходьбу",
+        stepsDesc: "Чим більше ви ходите, тим більше спалюєте: кожен крок автоматично збільшує ваш Бюджет на сьогодні.",
+        stepsInputLbl: "Кроків сьогодні:", tdeeLabel: "Загальні витрати (TDEE):", dailySavedLbl: "Баланс за день:",
+        mealsTitle: "Записати Прийоми Їжі",
+        mealPlaceholder: "Опишіть страву (напр. 150г пасти з томатами та 1 яблуко)...",
+        kcalPlaceholder: "Ккал",
+        btnAiCalc: "Оцінити з AI", btnAddMeal: "+ Додати",
+        emptyMeals: "Для цього прийому їжі ще немає записів.",
+        cats: { breakfast: "Сніданок", lunch: "Обід", dinner: "Вечеря", snacks: "Перекуси" },
+        wkTitle: "Підсумки Тижня", wkSub: "Загальна статистика за всі заповнені дні тижня",
+        btnResetWk: "Новий Тиждень", kpi1: "Спожито Калорій", kpi2: "Витрачено (TDEE)",
+        kpi3: "Сумарний Дефіцит", kpi3Sub: "Чиста економія калорій", kpi4: "Втрата Жиру (Оцінка)",
+        thDay: "День", thSteps: "Кроки", thBudget: "Бюджет 100%", thSpent: "Спожито", thStatus: "Шкала Бюджету", thResult: "Баланс",
+        notPlayed: "Немає записів",
+        daysShort: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+        daysFull: ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"],
+        confirmReset: "Очистити дані поточного тижня та почати новий?",
+        aiWorking: "⏳ AI рахує...",
+        aiDirectOk: "✅ Розраховано {p}: {n} ккал",
+        aiFallbackMsg: "✨ Швидка оцінка: <strong>{n} ккал</strong> (запит скопійовано). <a href='{u}' target='_blank' rel='noopener' class='underline font-bold text-amber-400 ml-1'>Перевірити в {p} ↗</a>",
+        aiPromptPrefix: "Порахуй загальну кількість калорій для цієї їжі і дай відповідь ТІЛЬКИ цілим числом ккал: ",
+        stepsUnit: "кроків", daysUnit: "активних днів", deficitWord: "Дефіцит", surplusWord: "Профіцит"
+      }
+    };
+
+    const emptyDays = () => Array.from({ length: 7 }, () => ({ steps: 0, meals: [] }));
+
+    let state = JSON.parse(localStorage.getItem('ydb_clean_v1')) || {
+      lang: 'it',
+      profile: null,
+      ai: { provider: 'gemini', apiKey: '' },
+      selectedDay: (new Date().getDay() + 6) % 7,
+      selectedCat: 'breakfast',
+      days: emptyDays()
+    };
+
+    function saveState() {
+      localStorage.setItem('ydb_clean_v1', JSON.stringify(state));
+      render();
+    }
+
+    function setLang(l) {
+      state.lang = l;
+      updateLivePreview();
+      saveState();
+    }
+
+    function updateLivePreview() {
+      const g = document.getElementById('pGender')?.value || 'm';
+      const a = Number(document.getElementById('pAge')?.value) || 25;
+      const h = Number(document.getElementById('pHeight')?.value) || 178;
+      const w = parseFloat(document.getElementById('pWeight')?.value) || 85;
+      const def = Number(document.getElementById('pDeficit')?.value) || 650;
+
+      const offset = g === 'm' ? 5 : -161;
+      const bmr = Math.round((10 * w) + (6.25 * h) - (5 * a) + offset);
+      const tdee = Math.round(bmr * 1.2);
+      const budget = Math.max(1200, tdee - def);
+
+      if (document.getElementById('prevBmrVal')) {
+        document.getElementById('prevBmrVal').textContent = `${bmr} kcal`;
+        document.getElementById('prevTdeeVal').textContent = `${tdee} kcal`;
+        document.getElementById('prevBudgetVal').textContent = `${budget} kcal`;
+      }
+    }
+
+    function openProfileModal() {
+      document.getElementById('profileModal').classList.remove('hidden');
+      if (state.profile) {
+        document.getElementById('pName').value = state.profile.name;
+        document.getElementById('pGender').value = state.profile.gender;
+        document.getElementById('pAge').value = state.profile.age;
+        document.getElementById('pHeight').value = state.profile.height;
+        document.getElementById('pWeight').value = state.profile.weight;
+        document.getElementById('pDeficit').value = state.profile.deficit;
+        document.getElementById('closeModalBtn').classList.remove('hidden');
+      }
+      updateLivePreview();
+    }
+
+    function closeProfileModal() {
+      if (state.profile) document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function saveProfile(e) {
+      e.preventDefault();
+      state.profile = {
+        name: document.getElementById('pName').value.trim(),
+        gender: document.getElementById('pGender').value,
+        age: Number(document.getElementById('pAge').value),
+        height: Number(document.getElementById('pHeight').value),
+        weight: parseFloat(document.getElementById('pWeight').value),
+        deficit: Number(document.getElementById('pDeficit').value)
+      };
+      document.getElementById('profileModal').classList.add('hidden');
+      saveState();
+    }
+
+    function openAiModal() {
+      document.getElementById('aiModal').classList.remove('hidden');
+      document.getElementById('aiApiKeyInput').value = state.ai.apiKey || '';
+      selectAiProvider(state.ai.provider || 'gemini');
+    }
+
+    function closeAiModal() {
+      document.getElementById('aiModal').classList.add('hidden');
+    }
+
+    function selectAiProvider(prov) {
+      state.ai.provider = prov;
+      ['gemini', 'chatgpt', 'claude'].forEach(p => {
+        const el = document.getElementById('prov_' + p);
+        el.className = `py-2.5 px-3 rounded-xl border text-xs font-bold transition ${
+          p === prov ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+        }`;
+      });
+    }
+
+    function saveAiConfig() {
+      state.ai.apiKey = document.getElementById('aiApiKeyInput').value.trim();
+      closeAiModal();
+      saveState();
+    }
+
+    async function estimateWithAI() {
+      const desc = document.getElementById('mealName').value.trim();
+      const statusEl = document.getElementById('aiHelperStatus');
+      const kcalInput = document.getElementById('mealKcal');
+      const t = I18N[state.lang];
+
+      if (!desc) {
+        document.getElementById('mealName').focus();
+        return;
+      }
+
+      statusEl.classList.remove('hidden');
+      statusEl.textContent = t.aiWorking;
+
+      const promptText = `${t.aiPromptPrefix}"${desc}"`;
+      const provName = state.ai.provider.toUpperCase();
+
+      if (state.ai.apiKey) {
+        try {
+          let reply = '';
+          if (state.ai.provider === 'gemini') {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.ai.apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            });
+            const data = await res.json();
+            reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          } else if (state.ai.provider === 'chatgpt') {
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.ai.apiKey}` },
+              body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: promptText }] })
+            });
+            const data = await res.json();
+            reply = data?.choices?.[0]?.message?.content || '';
+          } else if (state.ai.provider === 'claude') {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': state.ai.apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+              },
+              body: JSON.stringify({ model: 'claude-3-5-haiku-latest', max_tokens: 50, messages: [{ role: 'user', content: promptText }] })
+            });
+            const data = await res.json();
+            reply = data?.content?.[0]?.text || '';
+          }
+          const num = parseInt(reply.replace(/\D/g, ''), 10);
+          if (num > 0) {
+            kcalInput.value = num;
+            statusEl.textContent = t.aiDirectOk.replace('{p}', provName).replace('{n}', num);
+            return;
+          }
+        } catch (err) {
+          console.warn("Fallback to local estimate + web link", err);
+        }
+      }
+
+      const smartKcal = localSmartEstimate(desc);
+      kcalInput.value = smartKcal;
+
+      try { await navigator.clipboard.writeText(promptText); } catch (_) {}
+
+      const urls = {
+        chatgpt: `https://chatgpt.com/?q=${encodeURIComponent(promptText)}`,
+        claude: `https://claude.ai/new?q=${encodeURIComponent(promptText)}`,
+        gemini: `https://gemini.google.com/app`
+      };
+
+      statusEl.innerHTML = t.aiFallbackMsg
+        .replace('{n}', smartKcal)
+        .replace('{u}', urls[state.ai.provider])
+        .replace('{p}', provName);
+    }
+
+    // Motore di stima locale migliorato (riconosce i grammi associati ai singoli cibi)
+    function localSmartEstimate(text) {
+      const lower = text.toLowerCase();
+      const db = [
+        { k: ['pasta', 'spaghetti', 'chitarra', 'rigatoni', 'penne', 'risotto', 'riso', 'rice', 'паста', 'рис', 'макарони'], cal100: 350, defPortion: 420 },
+        { k: ['pane', 'sfilatino', 'panino', 'bread', 'pizza', 'focaccia', 'хліб', 'піца', 'булка'], cal100: 275, defPortion: 260 },
+        { k: ['tacchino', 'pollo', 'chicken', 'turkey', 'bresaola', 'tonno', 'merluzzo', 'pesce', 'індичка', 'курка', 'риба', 'тунець'], cal100: 115, defPortion: 170 },
+        { k: ['manzo', 'bistecca', 'hamburger', 'carne', 'beef', 'steak', 'pork', 'maiale', 'яловичина', 'свинина', 'м\'ясо'], cal100: 210, defPortion: 300 },
+        { k: ['guanciale', 'pancetta', 'bacon', 'salame', 'salsiccia', 'сало', 'бекон', 'ковбаса'], cal100: 580, defPortion: 190 },
+        { k: ['olio', 'oil', 'burro', 'butter', 'олія', 'масло'], cal100: 850, defPortion: 90 },
+        { k: ['pecorino', 'parmigiano', 'grana', 'formaggio', 'mozzarella', 'cheese', 'сир', 'моцарела'], cal100: 370, defPortion: 130 },
+        { k: ['uova', 'uovo', 'egg', 'omelette', 'яйц', 'омлет'], cal100: 155, defPortion: 150 },
+        { k: ['mela', 'banana', 'arancia', 'pera', 'frutta', 'apple', 'fruit', 'яблуко', 'банан', 'фрукт'], cal100: 60, defPortion: 90 },
+        { k: ['insalata', 'verdura', 'zucchine', 'pomodor', 'salad', 'vegetables', 'салат', 'овочі', 'томат'], cal100: 30, defPortion: 50 },
+        { k: ['caffè', 'coffee', 'cappuccino', 'latte', 'кава', 'капучино'], cal100: 45, defPortion: 35 },
+        { k: ['yogurt', 'skyr', 'fiocchi di latte', 'йогурт', 'сирок'], cal100: 80, defPortion: 120 },
+        { k: ['salatini', 'sfoglia', 'biscotti', 'cornetto', 'brioche', 'croissant', 'snack', 'patatine', 'dolce', 'круасан', 'печиво', 'чіпси'], cal100: 450, defPortion: 220 }
+      ];
+
+      let total = 0;
+      const segments = lower.split(/(?:\s+e\s+|\s+con\s+|\s+and\s+|\s+with\s+|\s+та\s+|\s+з\s+|[,+])/);
+
+      segments.forEach(seg => {
+        const gMatch = seg.match(/(\d+)\s*(?:g|gr|grammi|grams|г)\b/);
+        const grams = gMatch ? parseInt(gMatch[1], 10) : null;
+
+        let itemFound = null;
+        for (const item of db) {
+          if (item.k.some(w => seg.includes(w))) {
+            itemFound = item;
+            break;
+          }
+        }
+
+        if (itemFound) {
+          total += grams ? Math.round((grams * itemFound.cal100) / 100) : itemFound.defPortion;
+        } else if (grams) {
+          total += Math.round(grams * 2.0);
+        }
+      });
+
+      return total > 0 ? total : 350;
+    }
+
+    function calculateDayMetrics(dayObj) {
+      if (!state.profile) return { bmr: 0, stepKcal: 0, tdee: 0, target: 0, eaten: 0, pct: 0, realDeficit: 0 };
+      const p = state.profile;
+      const genderOffset = p.gender === 'm' ? 5 : -161;
+      const bmr = Math.round((10 * p.weight) + (6.25 * p.height) - (5 * p.age) + genderOffset);
+      const baseNeat = Math.round(bmr * 0.20);
+      const stepKcal = Math.round(dayObj.steps * (p.weight * 0.00055));
+      const tdee = bmr + baseNeat + stepKcal;
+      const target = Math.max(1200, tdee - p.deficit);
+      const eaten = dayObj.meals.reduce((acc, m) => acc + Number(m.kcal), 0);
+      const pct = target > 0 ? Math.round((eaten / target) * 100) : 0;
+      const realDeficit = tdee - eaten;
+
+      return { bmr, stepKcal, tdee, target, eaten, pct, realDeficit };
+    }
+
+    function selectDay(idx) { state.selectedDay = idx; saveState(); }
+    function selectCat(cat) { state.selectedCat = cat; saveState(); }
+    function updateSteps(val) { state.days[state.selectedDay].steps = Math.max(0, Number(val) || 0); saveState(); }
+    function addQuickSteps(amount) { state.days[state.selectedDay].steps += amount; saveState(); }
+
+    function addMeal(e) {
+      e.preventDefault();
+      const nameEl = document.getElementById('mealName');
+      const kcalEl = document.getElementById('mealKcal');
+      state.days[state.selectedDay].meals.push({
+        cat: state.selectedCat,
+        name: nameEl.value.trim(),
+        kcal: Number(kcalEl.value)
+      });
+      nameEl.value = '';
+      kcalEl.value = '';
+      document.getElementById('aiHelperStatus').classList.add('hidden');
+      saveState();
+    }
+
+    function removeMeal(idx) {
+      state.days[state.selectedDay].meals.splice(idx, 1);
+      saveState();
+    }
+
+    function resetWeek() {
+      if (confirm(I18N[state.lang].confirmReset)) {
+        state.days = emptyDays();
+        saveState();
+      }
+    }
+
+    function applyTranslations() {
+      const t = I18N[state.lang];
+      ['it', 'en', 'ua'].forEach(code => {
+        const btn = document.getElementById('lang_' + code);
+        btn.className = `px-2 py-1 rounded-lg text-xs font-bold transition ${
+          state.lang === code ? 'bg-indigo-500 text-white shadow' : 'text-slate-400 hover:text-white'
+        }`;
+      });
+
+      const keys = [
+        'aiBtn','editProfile','modalTitle','howTitle','howDesc','lblName','lblGender','optMale','optFemale',
+        'lblAge','lblHeight','lblWeight','lblGoal','goal1','goal2','goal3','goal4','prevBmr','prevTdee','prevBudget',
+        'btnStart','aiModalTitle','aiModalDesc','aiProviderLbl','apiKeyLbl','apiKeyHint','btnSaveAi',
+        'streakLabel','hudBudget','hudSpent','hudLeft','limit100','stepsTitle','stepsDesc','stepsInputLbl',
+        'tdeeLabel','dailySavedLbl','mealsTitle','btnAiCalc','btnAddMeal','wkTitle','wkSub','btnResetWk',
+        'kpi1','kpi2','kpi3','kpi3Sub','kpi4','thDay','thSteps','thBudget','thSpent','thStatus','thResult'
+      ];
+      keys.forEach(k => {
+        const el = document.getElementById('t_' + k);
+        if (el) el.textContent = t[k];
+      });
+
+      const mealNameEl = document.getElementById('mealName');
+      const mealKcalEl = document.getElementById('mealKcal');
+      if (mealNameEl) mealNameEl.placeholder = t.mealPlaceholder;
+      if (mealKcalEl) mealKcalEl.placeholder = t.kcalPlaceholder;
+    }
+
+    function render() {
+      applyTranslations();
+      const t = I18N[state.lang];
+
+      if (!state.profile) {
+        document.getElementById('appMain').classList.add('hidden');
+        document.getElementById('switchUserBtn').classList.add('hidden');
+        document.getElementById('aiConfigBtn').classList.add('hidden');
+        openProfileModal();
+        return;
+      }
+
+      document.getElementById('appMain').classList.remove('hidden');
+      document.getElementById('switchUserBtn').classList.remove('hidden');
+      document.getElementById('aiConfigBtn').classList.remove('hidden');
+      document.getElementById('playerSubtitle').textContent = `👤 ${state.profile.name} • ${state.profile.weight} kg • ${state.profile.height} cm (-${state.profile.deficit} kcal)`;
+      document.getElementById('activeAiBadge').textContent = `AI: ${state.ai.provider.toUpperCase()}`;
+
+      document.getElementById('dayTabs').innerHTML = t.daysShort.map((d, i) => {
+        const active = i === state.selectedDay;
+        const hasData = state.days[i].meals.length > 0 || state.days[i].steps > 0;
+        const dm = calculateDayMetrics(state.days[i]);
+        const dotColor = dm.pct > 100 ? 'bg-rose-500' : 'bg-emerald-400';
+        return `
+          <button onclick="selectDay(${i})" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition relative ${
+            active ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+          }">
+            ${d}
+            ${hasData && !active ? `<span class="w-2 h-2 rounded-full \${dotColor} absolute top-1 right-1"></span>` : ''}
+          </button>
+        `;
+      }).join('');
+
+      const currentDay = state.days[state.selectedDay];
+      const m = calculateDayMetrics(currentDay);
+      const isOver = m.pct > 100;
+
+      document.getElementById('currentDayLabel').textContent = t.daysFull[state.selectedDay];
+      document.getElementById('stepsInput').value = currentDay.steps || '';
+      document.getElementById('stepBurnBadge').textContent = `+${m.stepKcal} kcal`;
+
+      const pctText = document.getElementById('pctText');
+      const statusBadge = document.getElementById('statusBadge');
+      const calorieBar = document.getElementById('calorieBar');
+      const gameMessage = document.getElementById('gameMessage');
+      const leftKcalEl = document.getElementById('leftKcal');
+
+      pctText.textContent = `${m.pct}%`;
+      pctText.className = `text-4xl sm:text-5xl font-extrabold ${isOver ? 'text-rose-500' : 'text-emerald-400'}`;
+
+      if (isOver) {
+        statusBadge.textContent = t.statusOver;
+        statusBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+        calorieBar.className = 'h-full rounded-xl bar-anim bg-rose-500';
+        gameMessage.textContent = t.msgOver.replace('{n}', m.eaten - m.target);
+        gameMessage.className = 'font-bold text-rose-400 text-center';
+        leftKcalEl.textContent = `-${m.eaten - m.target}`;
+        leftKcalEl.className = 'text-base sm:text-lg font-extrabold text-rose-400';
+      } else {
+        statusBadge.textContent = t.statusWin;
+        statusBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        calorieBar.className = 'h-full rounded-xl bar-anim bg-emerald-500';
+        gameMessage.textContent = t.msgWin.replace('{n}', m.target - m.eaten);
+        gameMessage.className = 'font-bold text-emerald-400 text-center';
+        leftKcalEl.textContent = `${m.target - m.eaten}`;
+        leftKcalEl.className = 'text-base sm:text-lg font-extrabold text-emerald-400';
+      }
+
+      calorieBar.style.width = `${Math.min(m.pct, 100)}%`;
+      document.getElementById('eatenKcal').textContent = m.eaten;
+      document.getElementById('targetKcal').textContent = m.target;
+      document.getElementById('tdeeKcal').textContent = `${m.tdee} kcal`;
+
+      const defEl = document.getElementById('dailyDeficitText');
+      if (m.realDeficit >= 0) {
+        defEl.textContent = `-${m.realDeficit} kcal (${t.deficitWord})`;
+        defEl.className = 'font-extrabold text-emerald-400';
+      } else {
+        defEl.textContent = `+${Math.abs(m.realDeficit)} kcal (${t.surplusWord})`;
+        defEl.className = 'font-extrabold text-rose-400';
+      }
+
+      document.getElementById('mealCategoryTabs').innerHTML = CATS.map(c => {
+        const catTotal = currentDay.meals.filter(x => (x.cat || 'breakfast') === c).reduce((a, b) => a + b.kcal, 0);
+        const active = state.selectedCat === c;
+        return `
+          <button onclick="selectCat('${c}')" class="p-2.5 rounded-2xl border text-left transition ${
+            active ? 'bg-indigo-600/25 border-indigo-500 text-white shadow' : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-white'
+          }">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span>${CAT_ICONS[c]} ${t.cats[c]}</span>
+            </div>
+            <p class="text-sm font-extrabold mt-1 ${catTotal > 0 ? 'text-amber-400' : 'text-slate-500'}">${catTotal} kcal</p>
+          </button>
+        `;
+      }).join('');
+
+      const mealList = document.getElementById('mealList');
+      const catMeals = currentDay.meals
+        .map((meal, originalIdx) => ({ ...meal, originalIdx }))
+        .filter(m => (m.cat || 'breakfast') === state.selectedCat);
+
+      if (catMeals.length === 0) {
+        mealList.innerHTML = `<div class="text-center py-6 text-xs text-slate-500 border border-dashed border-slate-800 rounded-2xl">${t.emptyMeals}</div>`;
+      } else {
+        mealList.innerHTML = catMeals.map(meal => `
+          <div class="flex items-center justify-between bg-slate-950/90 border border-slate-800/80 px-4 py-2.5 rounded-xl">
+            <span class="text-sm text-slate-200 font-semibold">${meal.name}</span>
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-extrabold text-amber-400">${meal.kcal} kcal</span>
+              <button onclick="removeMeal(${meal.originalIdx})" class="text-slate-500 hover:text-rose-400 text-xs font-bold px-1.5 py-0.5">✕</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      let wkEaten = 0, wkBurned = 0, wkDeficit = 0, wkSteps = 0, activeDays = 0, winDays = 0;
+      document.getElementById('weeklyTableBody').innerHTML = state.days.map((dObj, idx) => {
+        const dm = calculateDayMetrics(dObj);
+        const isActive = dObj.meals.length > 0 || dObj.steps > 0;
+        const rowOver = dm.pct > 100;
+        if (isActive) {
+          activeDays++;
+          wkEaten += dm.eaten;
+          wkBurned += dm.tdee;
+          wkDeficit += dm.realDeficit;
+          wkSteps += dObj.steps;
+          if (!rowOver) winDays++;
+        }
+        return `
+          <tr onclick="selectDay(${idx})" class="cursor-pointer hover:bg-slate-800/40 transition ${idx === state.selectedDay ? 'bg-slate-800/60' : ''}">
+            <td class="py-3 px-3 font-bold text-white">${t.daysFull[idx]}</td>
+            <td class="py-3 px-3 text-slate-300">${dObj.steps.toLocaleString()}</td>
+            <td class="py-3 px-3 text-amber-400 font-semibold">${isActive ? dm.target + ' kcal' : '—'}</td>
+            <td class="py-3 px-3 font-extrabold ${rowOver ? 'text-rose-400' : 'text-emerald-400'}">${isActive ? dm.eaten + ' kcal' : '—'}</td>
+            <td class="py-3 px-3">
+              ${isActive ? `
+                <div class="flex items-center gap-2">
+                  <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div class="h-full ${rowOver ? 'bg-rose-500' : 'bg-emerald-500'}" style="width:${Math.min(dm.pct, 100)}%"></div>
+                  </div>
+                  <span class="text-xs font-extrabold ${rowOver ? 'text-rose-400' : 'text-emerald-400'} w-10">${dm.pct}%</span>
+                </div>
+              ` : `<span class="text-xs text-slate-600">\${t.notPlayed}</span>`}
+            </td>
+            <td class="py-3 px-3 text-right font-extrabold ${!isActive ? 'text-slate-600' : (dm.realDeficit >= 0 ? 'text-emerald-400' : 'text-rose-400')}">
+              ${isActive ? (dm.realDeficit >= 0 ? `-\${dm.realDeficit} kcal` : `+\${Math.abs(dm.realDeficit)} kcal`) : '—'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('winStreakCount').textContent = `${winDays}/${activeDays || 7}`;
+      document.getElementById('wkEaten').textContent = `${wkEaten.toLocaleString()} kcal`;
+      document.getElementById('wkDaysCount').textContent = `${activeDays} / 7 (${t.daysUnit})`;
+      document.getElementById('wkBurned').textContent = `${wkBurned.toLocaleString()} kcal`;
+      document.getElementById('wkStepsTotal').textContent = `${wkSteps.toLocaleString()} ${t.stepsUnit}`;
+      
+      const wkDefEl = document.getElementById('wkDeficit');
+      wkDefEl.textContent = `${wkDeficit >= 0 ? '-' : '+'}${Math.abs(wkDeficit).toLocaleString()} kcal`;
+      wkDefEl.className = `text-2xl font-extrabold mt-1 ${wkDeficit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      const fatGrams = Math.round(wkDeficit / 7.7);
+      document.getElementById('wkFatLost').textContent = fatGrams > 0 ? `${fatGrams} g` : `0 g`;
+    }
+
+    render();
+  </script>
+</body>
+</html>
